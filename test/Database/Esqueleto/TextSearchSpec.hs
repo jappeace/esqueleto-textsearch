@@ -18,8 +18,9 @@ import Data.Text (Text, pack)
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Logger (MonadLogger(..), runStderrLoggingT)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (
-  MonadBaseControl, MonadThrow, ResourceT, runResourceT)
+  MonadThrow, ResourceT, runResourceT)
 import Database.Esqueleto (
     SqlExpr, Value(..), unValue, update, select, set, val, from, where_
   , (=.), (^.))
@@ -279,8 +280,8 @@ spec = do
         isEqual ((toRight . fromPersistValue . toPersistValue) q) q
           `shouldBe` True
 
-instance Arbitrary ([NormalizationOption]) where
-  arbitrary = (:[]) <$> elements [minBound..maxBound]
+instance {-# OVERLAPPING #-} Arbitrary [NormalizationOption] where
+    arbitrary = (:[]) <$> elements [minBound..maxBound]
 
 instance a ~ Lexemes => Arbitrary (TsQuery a) where
   arbitrary = query 0
