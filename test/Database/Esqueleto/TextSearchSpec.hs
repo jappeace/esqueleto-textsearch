@@ -1,38 +1,58 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE OverloadedStrings #-}
+
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Database.Esqueleto.TextSearchSpec (main, spec) where
 
 import Control.Monad (forM_)
+import Data.Maybe (fromJust)
 import Data.Text (Text, pack)
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Logger (MonadLogger(..), runStderrLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Control.Monad.Trans.Resource (
-  MonadThrow, ResourceT, runResourceT)
-import Database.Esqueleto (
-    SqlExpr, Value(..), unValue, update, select, set, val, from, where_
-  , (=.), (^.))
-import Database.Persist (entityKey, insert, get, PersistField(..))
-import Database.Persist.Postgresql (
-    SqlPersistT, ConnectionString, runSqlConn, transactionUndo
-  , withPostgresqlConn, runMigration)
-import Database.Persist.TH (
-  mkPersist, mkMigrate, persistUpperCase, share, sqlSettings)
-import Test.Hspec (Spec, hspec, describe, it, shouldBe)
-import Test.QuickCheck (
-    Arbitrary(..), property, elements, oneof, listOf, listOf1, choose)
+import Control.Monad.Trans.Resource (MonadThrow, ResourceT, runResourceT)
+import Database.Esqueleto
+       ( SqlExpr
+       , Value(..)
+       , from
+       , select
+       , set
+       , unValue
+       , update
+       , val
+       , where_
+       , (=.)
+       , (^.)
+       )
+import Database.Persist (PersistField(..), entityKey, get, insert)
+import Database.Persist.Postgresql
+       ( ConnectionString
+       , SqlPersistT
+       , runMigration
+       , runSqlConn
+       , transactionUndo
+       , withPostgresqlConn
+       )
+import Database.Persist.TH
+       (mkMigrate, mkPersist, persistUpperCase, share, sqlSettings)
+import Test.Hspec (Spec, describe, hspec, it, shouldBe)
+import Test.QuickCheck
+       (Arbitrary(..), choose, elements, listOf, listOf1, oneof, property)
 
 import Database.Esqueleto.TextSearch
 
@@ -79,7 +99,7 @@ spec = do
       arId <- insert article
       update  $ \a -> do
         set a [ArticleTextsearch =. to_etsvector (a^.ArticleContent)]
-      Just ret <- get arId
+      ret <- fromJust <$> get arId
       liftIO $ articleTextsearch ret /= def `shouldBe` True
 
     it "can be persisted and retrieved with weight" $ run $ do
@@ -89,7 +109,7 @@ spec = do
         set a [  ArticleTextsearch
               =. setweight (to_etsvector (a^.ArticleContent)) (val Highest)
               ]
-      Just ret <- get arId
+      ret <- fromJust <$> get arId
       liftIO $ articleTextsearch ret /= def `shouldBe` True
 
   describe "Weight" $ do
@@ -114,25 +134,27 @@ spec = do
         wId <- insert m
         ret <- get wId
         liftIO $ ret `shouldBe` Just m
-      
+
 
   describe "TsQuery" $ do
     it "can be persisted and retrieved" $ run $ do
       let qm = QueryModel (lexm "foo" :& lexm "bar")
       qId <- insert qm
-      Just ret <- get qId
+      ret <- fromJust <$> get qId
       liftIO $ qm `shouldBe` ret
 
     describe "to_tsquery" $ do
       it "converts words to lexemes" $ run $ do
-        [Value lq ] <- select $ return $ 
+        lqs <- select $ return $
           to_tsquery (val "english") (val ("supernovae" :& "rats"))
+        let lq = unValue $ head lqs
         liftIO $ lq `shouldBe` (lexm "supernova" :& lexm "rat")
 
     describe "plainto_tsquery" $ do
       it "converts text to lexemes" $ run $ do
-        [Value lq ] <- select $ return $ 
+        lqs <- select $ return $
           plainto_tsquery (val "english") (val "rats in supernovae")
+        let lq = unValue $ head lqs
         liftIO $ lq `shouldBe` (lexm "rat" :& lexm "supernova")
 
     describe "queryToText" $ do
