@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -14,7 +15,11 @@ module Database.Esqueleto.TextSearch.Language
 import Data.String (IsString)
 import Data.Text (Text)
 import Database.Esqueleto (SqlExpr, Value)
+#if MIN_VERSION_esqueleto(3,5,0)
+import Database.Esqueleto.Internal.Internal (unsafeSqlBinOp, unsafeSqlFunction)
+#else
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlFunction)
+#endif
 import Database.Esqueleto.TextSearch.Types
 
 (@@.)
