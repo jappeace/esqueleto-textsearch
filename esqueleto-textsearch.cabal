@@ -2,7 +2,7 @@ name:               esqueleto-textsearch
 version:            1.0.0.3
 synopsis:           PostgreSQL full text search for Esqueleto
 description:        PostgreSQL text search functions for Esqueleto.
-homepage:           https://github.com/albertov/esqueleto-textsearch
+homepage:           https://github.com/SupercedeTech/esqueleto-textsearch-ii
 license:            MIT
 license-file:       LICENSE
 author:             Alberto Valverde González
