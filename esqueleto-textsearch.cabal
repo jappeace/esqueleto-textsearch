@@ -1,53 +1,57 @@
-name:                esqueleto-textsearch
-version:             1.0.0.2
-synopsis:            PostgreSQL full text search for Esqueleto
-description:         PostgreSQL text search functions for Esqueleto.
-homepage:            https://github.com/albertov/esqueleto-textsearch
-license:             MIT
-license-file:        LICENSE
-author:              Alberto Valverde González
-maintainer:          alberto@toscat.net
-copyright:           2015 Alberto Valverde González
-category:            Database
-build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
+name:               esqueleto-textsearch
+version:            1.0.0.3
+synopsis:           PostgreSQL full text search for Esqueleto
+description:        PostgreSQL text search functions for Esqueleto.
+homepage:           https://github.com/albertov/esqueleto-textsearch
+license:            MIT
+license-file:       LICENSE
+author:             Alberto Valverde González
+maintainer:         info@supercede.com
+copyright:          2015 Alberto Valverde González
+category:           Database
+build-type:         Simple
+extra-source-files: README.md
+cabal-version:      >=1.10
 
 library
-  exposed-modules:     Database.Esqueleto.TextSearch
-                     , Database.Esqueleto.TextSearch.Language
-                     , Database.Esqueleto.TextSearch.Types
-  build-depends:
-      base                  >= 4.9   && < 5
-    , esqueleto             >= 3.2
-    , persistent            >= 2.8.2
-    , persistent-postgresql >= 2.10
-    , text                  >= 1.2   && < 1.3
-    , parsec
-    , data-default
+  exposed-modules:
+    Database.Esqueleto.TextSearch
+    Database.Esqueleto.TextSearch.Language
+    Database.Esqueleto.TextSearch.Types
 
-  hs-source-dirs:      src
-  default-language:    Haskell2010
-  ghc-options:         -Wall -fwarn-incomplete-uni-patterns
+  build-depends:
+      base                   >=4.9   && <5
+    , data-default           <0.8
+    , esqueleto              >=3.2 && < 3.6
+    , parsec                 <3.2
+    , persistent             >=2.8.2 && <2.15
+    , persistent-postgresql  >=2.10  && <2.15
+    , text                   >=1.2   && <2.1
+
+  hs-source-dirs:   src
+  default-language: Haskell2010
+  ghc-options:      -Wall -fwarn-incomplete-uni-patterns
 
 test-suite spec
-  type:                exitcode-stdio-1.0
-  ghc-options:         -Wall -fwarn-incomplete-uni-patterns
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  other-modules:       Database.Esqueleto.TextSearchSpec
-  build-depends:       base
-                     , esqueleto
-                     , esqueleto-textsearch
-                     , persistent
-                     , transformers
-                     , resourcet
-                     , text
-                     , HUnit
-                     , QuickCheck
-                     , hspec
-                     , persistent-postgresql
-                     , persistent-template
-                     , monad-control
-                     , monad-logger
-  default-language:    Haskell2010
+  type:             exitcode-stdio-1.0
+  ghc-options:      -Wall -fwarn-incomplete-uni-patterns
+  hs-source-dirs:   test
+  main-is:          Spec.hs
+  other-modules:    Database.Esqueleto.TextSearchSpec
+  build-depends:
+      base
+    , esqueleto
+    , esqueleto-textsearch
+    , hspec
+    , HUnit
+    , monad-control
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , QuickCheck
+    , resourcet
+    , text
+    , transformers
+
+  default-language: Haskell2010

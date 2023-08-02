@@ -1,0 +1,38 @@
+name: cabal CI
+
+on: [pull_request]
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc:
+          # - '9.6' # need a new postgresql libpq
+          - '9.4'
+          - '9.2'
+        os: [ubuntu-latest, macOS-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: haskell/actions/setup@v2
+      with:
+        ghc-version: ${{ matrix.ghc }}
+
+    - name: Cabal cache
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-cabal
+      with:
+        path: ~/.cabal
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+    - name: Cabal update
+      run: cabal update
+    - name: Build using cabal
+      run: cabal build all
+    # - name: Test
+    #   run: cabal test all
