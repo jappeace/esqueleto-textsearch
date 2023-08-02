@@ -24,8 +24,8 @@ library
     , data-default           <0.8
     , esqueleto              >=3.2 && < 3.6
     , parsec                 <3.2
-    , persistent             >=2.8.2 && <2.15
-    , persistent-postgresql  >=2.10  && <2.15
+    , persistent             >=2.8.2 && <2.14
+    , persistent-postgresql  >=2.10  && <2.14
     , text                   >=1.2   && <2.1
 
   hs-source-dirs:   src
