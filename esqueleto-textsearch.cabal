@@ -11,7 +11,12 @@ copyright:          2015 Alberto Valverde González
 category:           Database
 build-type:         Simple
 extra-source-files: README.md
+                    Changelog.md
 cabal-version:      >=1.10
+
+source-repository head
+  type: git
+  location: https://github.com/SupercedeTech/esqueleto-textsearch-ii 
 
 library
   exposed-modules:
