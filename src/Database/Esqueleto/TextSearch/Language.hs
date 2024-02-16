@@ -4,6 +4,9 @@
 
 module Database.Esqueleto.TextSearch.Language
   ( (@@.)
+  , SearchQuery
+  , toSearchQuery
+  , prefixAndQuery
   , to_tsvector
   , to_tsquery
   , plainto_tsquery
@@ -14,13 +17,15 @@ module Database.Esqueleto.TextSearch.Language
 
 import Data.String (IsString)
 import Data.Text (Text)
-import Database.Esqueleto (SqlExpr, Value)
+import Database.Esqueleto (SqlExpr, Value, val)
 #if MIN_VERSION_esqueleto(3,5,0)
 import Database.Esqueleto.Internal.Internal (unsafeSqlBinOp, unsafeSqlFunction)
 #else
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlFunction)
 #endif
 import Database.Esqueleto.TextSearch.Types
+import qualified Data.Text as T
+import Data.List.NonEmpty(nonEmpty, NonEmpty, toList)
 
 (@@.)
   :: SqlExpr (Value TsVector)
@@ -78,7 +83,8 @@ tsquery_and :: SqlExpr (Value (TsQuery Lexemes))
 tsquery_and = unsafeSqlBinOp "&&"
 
 -- | format the query into lexemes
---   the result can be used in '@@.' for example
+--   the result can be used in '@@.' for example.
+--   defaults to english.
 --
 --   @
 --
@@ -86,19 +92,22 @@ tsquery_and = unsafeSqlBinOp "&&"
 --
 --   @
 --
-prefixAndQuery :: Query -> SqlExpr (Value (TsQuery Lexemes))
-prefixAndQuery (Query ts) =
+prefixAndQuery :: SearchQuery -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQuery = prefixAndQueryLang "english"
+
+prefixAndQueryLang :: RegConfig -> SearchQuery -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQueryLang language (SearchQuery ts) =
   foldr1 tsquery_and
-  $ map (to_tsquery (val "english") . val . Word Prefix []) $ toList ts
+  $ map (to_tsquery (val language) . val . Word Prefix []) $ toList ts
 
 
-newtype Query = Query { unQuery :: NonEmpty Text }
+newtype SearchQuery = SearchQuery { unQuery :: NonEmpty Text }
   deriving (Show)
 
 -- | constructs a valid search query, removes a bunch of illegal
 --   characters and splits the terms for better results
-toSearchQuery :: Text -> Maybe Query
-toSearchQuery q = Query <$> nonEmpty qs
+toSearchQuery :: Text -> Maybe SearchQuery
+toSearchQuery q = SearchQuery <$> nonEmpty qs
   -- We disallow whitespace, \ and ' for the sake of producing a Text
   -- that can fit postgresql's requirements for to_tsquery's text
   -- argument. Note that this is not done nor needed for security reasons

@@ -6,6 +6,7 @@
 + added a saner api for doing actual search.
 + improve documentation.
 + bump text
++ drop data default dependency.
 
 
 ## Version 1.0.0.3 
