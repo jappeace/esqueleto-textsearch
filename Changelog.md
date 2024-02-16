@@ -1,6 +1,9 @@
 # Change log for esqueleto text search 
 
 
+## Version 1.1.4
++ link to new homepage
+
 ## Version 1.1.3
 + update maintainer field to me.
 + update copyright field.
