@@ -6,7 +6,7 @@ homepage:           https://github.com/jappeace/esqueleto-textsearch
 license:            MIT
 license-file:       LICENSE
 author:             Alberto Valverde González
-maintainer:         hi@jappie.me
+maintainer:         jappie, hi@jappie.me
 copyright:          2015 Alberto Valverde González
 category:           Database
 build-type:         Simple
