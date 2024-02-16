@@ -1,5 +1,10 @@
 # Change log for esqueleto text search 
 
+
+## Version 1.1.3
++ update maintainer field to me.
++ update copyright field.
+
 ## Version 1.1.2
 + add myself as author considering I wrote most stuff at this point
 
