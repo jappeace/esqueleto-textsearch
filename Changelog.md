@@ -1,5 +1,8 @@
 # Change log for esqueleto text search 
 
+## Version 1.1.1
++ add tutorial in the readme
+
 ## Version 1.1.0
 
 + Removed weird patch numbering
