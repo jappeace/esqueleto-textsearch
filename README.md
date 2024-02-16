@@ -1,4 +1,4 @@
-# esqueleto-fts
+# esqueleto-textsearch
 Haskell bindings for postgres full text search in esqueleto.
 for a good explenation see https://rachbelaid.com/postgres-full-text-search-is-good-enough/
 
