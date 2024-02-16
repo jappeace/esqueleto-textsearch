@@ -1,5 +1,8 @@
 # Change log for esqueleto text search 
 
+## Version 1.1.2
++ add myself as author considering I wrote most stuff at this point
+
 ## Version 1.1.1
 + add tutorial in the readme
 
