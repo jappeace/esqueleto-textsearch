@@ -11,15 +11,16 @@ module Database.Esqueleto.TextSearch.Types (
   , Words
   , Lexemes
   , TsVector
+  , defaultTsVector
   , RegConfig
   , NormalizationOption (..)
   , Weight (..)
+  , defaultWeights
   , Weights (..)
   , Position (..)
   , word
   , queryToText
   , textToQuery
-  , def
 ) where
 
 import Control.Applicative (pure, many, optional, (<$>), (*>), (<*), (<|>))
@@ -33,7 +34,6 @@ import Text.Parsec (
   ParseError, runParser, char, eof, between, choice, spaces, satisfy, many1)
 import qualified Text.Parsec.Expr as P
 
-import Data.Default (Default(def))
 import Data.Text (Text, singleton)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Text.Lazy (toStrict)
@@ -101,8 +101,8 @@ data Weights
             , aWeight :: !Double
             } deriving (Eq, Show)
 
-instance Default Weights where
-  def = Weights 0.1 0.2 0.4 1.0
+defaultWeights :: Weights
+defaultWeights = Weights 0.1 0.2 0.4 1.0
 
 instance PersistField Weights where
   toPersistValue (Weights d c b a)
@@ -215,8 +215,8 @@ textToQuery = runParser (expr <* eof) () ""
 
 newtype TsVector = TsVector {unTsVector::Text} deriving (Eq, Show, IsString)
 
-instance Default TsVector where
-  def = TsVector ""
+defaultTsVector :: TsVector
+defaultTsVector = TsVector ""
 
 instance PersistField TsVector where
   toPersistValue = PersistDbSpecific . encodeUtf8 . unTsVector
@@ -228,6 +228,11 @@ instance PersistFieldSql TsVector where
   sqlType = const (SqlOther "tsvector")
 
 
+
+-- | regconfig is the object identifier type which represents the
+--   text search configuration in Postgres: http://www.postgresql.org/docs/9.3/static/datatype-oid.html
+--
+--   this could for example be a language or simple.
 newtype RegConfig = RegConfig {unRegConfig::Text} deriving (Eq, Show, IsString)
 
 instance PersistField RegConfig where

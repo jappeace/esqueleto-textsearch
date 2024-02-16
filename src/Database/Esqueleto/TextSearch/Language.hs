@@ -4,6 +4,9 @@
 
 module Database.Esqueleto.TextSearch.Language
   ( (@@.)
+  , prefixAndQuery
+  , toSearchTerm
+  , SearchTerm
   , to_tsvector
   , to_tsquery
   , plainto_tsquery
@@ -14,13 +17,15 @@ module Database.Esqueleto.TextSearch.Language
 
 import Data.String (IsString)
 import Data.Text (Text)
-import Database.Esqueleto (SqlExpr, Value)
+import Database.Esqueleto (SqlExpr, Value, val)
 #if MIN_VERSION_esqueleto(3,5,0)
 import Database.Esqueleto.Internal.Internal (unsafeSqlBinOp, unsafeSqlFunction)
 #else
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlFunction)
 #endif
 import Database.Esqueleto.TextSearch.Types
+import qualified Data.Text as T
+import Data.List.NonEmpty(nonEmpty, NonEmpty, toList)
 
 (@@.)
   :: SqlExpr (Value TsVector)
@@ -68,3 +73,42 @@ setweight
   -> SqlExpr (Value Weight)
   -> SqlExpr (Value TsVector)
 setweight a b = unsafeSqlFunction "setweight" (a, b)
+
+-- | (&&) for tsquery. This function would be called (&&.) but
+-- Esqueleto's (&&.) confines that fn to sql boolean expressions.
+-- x::tsquery && y::tsquery == to_tsquery('x & y')
+tsquery_and :: SqlExpr (Value (TsQuery Lexemes))
+      -> SqlExpr (Value (TsQuery Lexemes))
+      -> SqlExpr (Value (TsQuery Lexemes))
+tsquery_and = unsafeSqlBinOp "&&"
+
+-- | format the query into lexemes
+--   the result can be used in '@@.' for example:
+--
+--   @
+--      where_ $ (index ^. UnitSearchIndexDocument) @@. prefixAndQuery query
+--   @
+--
+prefixAndQuery :: SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQuery = prefixAndQueryLang "english"
+
+-- | specify a language to be used with the query.
+prefixAndQueryLang :: RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQueryLang language (SearchTerm ts) =
+  foldr1 tsquery_and
+  $ map (to_tsquery (val language) . val . Word Prefix []) $ toList ts
+
+
+-- | A valid search term
+newtype SearchTerm = SearchTerm { unQuery :: NonEmpty Text }
+  deriving (Show)
+
+-- | constructs a valid search query, removes a bunch of illegal
+--   characters and splits the terms for better results
+toSearchTerm :: Text -> Maybe SearchTerm
+toSearchTerm q = SearchTerm <$> nonEmpty qs
+  -- We disallow whitespace, \ and ' for the sake of producing a Text
+  -- that can fit postgresql's requirements for to_tsquery's text
+  -- argument. Note that this is not done nor needed for security reasons
+  where qs = filter (not . T.null) $ T.words
+             $ T.filter (`notElem` ['\\', '\'']) $ T.strip q
