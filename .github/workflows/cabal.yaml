@@ -11,6 +11,8 @@ jobs:
       matrix:
         ghc:
           # - '9.6' # need a new postgresql libpq
+          - '9.8'
+          - '9.6'
           - '9.4'
           - '9.2'
         os: [ubuntu-latest, macOS-latest]
