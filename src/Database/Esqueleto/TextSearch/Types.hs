@@ -228,6 +228,11 @@ instance PersistFieldSql TsVector where
   sqlType = const (SqlOther "tsvector")
 
 
+
+-- | regconfig is the object identifier type which represents the
+--   text search configuration in Postgres: http://www.postgresql.org/docs/9.3/static/datatype-oid.html
+--
+--   this could for example be a language or simple.
 newtype RegConfig = RegConfig {unRegConfig::Text} deriving (Eq, Show, IsString)
 
 instance PersistField RegConfig where

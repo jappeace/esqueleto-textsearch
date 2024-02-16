@@ -4,9 +4,9 @@
 
 module Database.Esqueleto.TextSearch.Language
   ( (@@.)
-  , SearchTerm
-  , toSearchTerm
   , prefixAndQuery
+  , toSearchTerm
+  , SearchTerm
   , to_tsvector
   , to_tsquery
   , plainto_tsquery
@@ -83,18 +83,16 @@ tsquery_and :: SqlExpr (Value (TsQuery Lexemes))
 tsquery_and = unsafeSqlBinOp "&&"
 
 -- | format the query into lexemes
---   the result can be used in '@@.' for example.
---   defaults to english.
+--   the result can be used in '@@.' for example:
 --
 --   @
---
 --      where_ $ (index ^. UnitSearchIndexDocument) @@. prefixAndQuery query
---
 --   @
 --
 prefixAndQuery :: SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
 prefixAndQuery = prefixAndQueryLang "english"
 
+-- | specify a language to be used with the query.
 prefixAndQueryLang :: RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
 prefixAndQueryLang language (SearchTerm ts) =
   foldr1 tsquery_and
