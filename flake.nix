@@ -16,12 +16,25 @@
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       hpkgs = pkgs.haskellPackages.override {
         overrides = hnew: hold: {
-          esqueleto-textsearch = hnew.callCabal2nix "esqueleto-textsearch" ./. { };
+          esqueleto-textsearch = pkgs.haskell.lib.overrideCabal (hnew.callCabal2nix "esqueleto-textsearch" ./. { }) {
+            postBuild = ''
+                echo "entering the phase"
+                ${pkgs.tree}/bin/tree
+                mkdir -p $out/bin/test
+                cp ./dist/build/spec/spec $out/bin/test/spec
+            '';
+
+            checkPhase = ''
+            echo "ran by flake :)"
+            '';
+          }
+            ;
         };
       };
+      package = hpkgs.esqueleto-textsearch;
     in
     {
-      defaultPackage.x86_64-linux = pkgs.haskell.lib.dontCheck hpkgs.esqueleto-textsearch;
+      defaultPackage.x86_64-linux = package;
       # to run this you need to
       # set the test suite to an executable in the cabal file
       checks.x86_64-linux.tests =  pkgs.nixosTest {
@@ -32,11 +45,14 @@
           server.wait_for_unit("postgresql.service")
           print(
               server.succeed(
-                  "${hpkgs.esqueleto-textsearch}/bin/spec --fail-on-focused"
+                  "${package}/bin/test/spec --fail-on-focused"
               )
           )
         '';
         nodes.server = {
+
+          virtualisation.memorySize = 2048;
+          virtualisation.diskSize = 1024;
           services.postgresql = {
             enable = true;
             initialScript = pkgs.writeText "psql-init" ''
