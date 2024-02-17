@@ -19,7 +19,6 @@
           esqueleto-textsearch = pkgs.haskell.lib.overrideCabal (hnew.callCabal2nix "esqueleto-textsearch" ./. { }) {
             postBuild = ''
                 echo "entering the phase"
-                ${pkgs.tree}/bin/tree
                 mkdir -p $out/bin/test
                 cp ./dist/build/spec/spec $out/bin/test/spec
             '';
