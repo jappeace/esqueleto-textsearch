@@ -1,8 +1,19 @@
-
+{-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -- | Haskell bindings for postgres full text search.
---   for a good explenation see https://rachbelaid.com/postgres-full-text-search-is-good-enough/
+--   for a good explenation see <https://rachbelaid.com/postgres-full-text-search-is-good-enough/>
+--
+--   see the [readme](https://hackage.haskell.org/package/esqueleto-textsearch#tutorial) for a full tutorial.
 module Database.Esqueleto.TextSearch (
-    module Database.Esqueleto.TextSearch.Language
+   (@@.)
+  , prefixAndQuery
+  , toSearchTerm
+  , SearchTerm
+  , ts_rank
+  , defaultWeights
+  , Weights (..)
+  , RegConfig
+  , NormalizationOption(..)
+  , module Database.Esqueleto.TextSearch.Language
   , module Database.Esqueleto.TextSearch.Types
 ) where
 

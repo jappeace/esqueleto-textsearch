@@ -27,9 +27,21 @@ import Database.Esqueleto.TextSearch.Types
 import qualified Data.Text as T
 import Data.List.NonEmpty(nonEmpty, NonEmpty, toList)
 
+
+-- | Apply some query to a tsvector document
+--   for example:
+--
+-- @
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> SearchTerm -> SqlQuery ()
+-- searchCompany company term = do
+--   let query = prefixAndQuery term
+--       norm = val []
+--   where_ $ (company ^. CompanySearchIndexDocument) @@. query
+-- @
+--
 (@@.)
-  :: SqlExpr (Value TsVector)
-  -> SqlExpr (Value (TsQuery Lexemes))
+  :: SqlExpr (Value TsVector) -- ^ the document to search in
+  -> SqlExpr (Value (TsQuery Lexemes)) -- ^ the query made by 'prefixAndQuery'
   -> SqlExpr (Value Bool)
 (@@.) = unsafeSqlBinOp "@@"
 
@@ -52,11 +64,26 @@ plainto_tsquery
   -> SqlExpr (Value (TsQuery Lexemes))
 plainto_tsquery a b = unsafeSqlFunction "plainto_tsquery" (a, b)
 
+-- | Organize search result by weights. This allows you to put better
+--   matching results higher.
+--   for example:
+--
+-- @
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> SearchTerm -> SqlQuery ()
+-- searchCompany company term = do
+--   let query = prefixAndQuery term
+--       norm = val []
+--   where_ $ (company ^. CompanySearchIndexDocument) @@. query
+--   orderBy [desc (ts_rank (val defaultWeights)
+--                  (company ^. CompanySearchIndexDocument)
+--                  query norm)]
+-- @
+--
 ts_rank
-  :: SqlExpr (Value Weights)
-  -> SqlExpr (Value TsVector)
-  -> SqlExpr (Value (TsQuery Lexemes))
-  -> SqlExpr (Value [NormalizationOption])
+  :: SqlExpr (Value Weights) -- ^ relative weighting of a b c and d, see 'defaultWeights'
+  -> SqlExpr (Value TsVector) -- ^ the document to search in
+  -> SqlExpr (Value (TsQuery Lexemes)) -- ^ the query made by 'prefixAndQuery'
+  -> SqlExpr (Value [NormalizationOption]) -- ^ normalization option to indicate how to deal with document length
   -> SqlExpr (Value Double)
 ts_rank a b c d = unsafeSqlFunction "ts_rank" (a, b, c, d)
 
@@ -85,9 +112,13 @@ tsquery_and = unsafeSqlBinOp "&&"
 -- | format the query into lexemes
 --   the result can be used in '@@.' for example:
 --
---   @
---      where_ $ (index ^. UnitSearchIndexDocument) @@. prefixAndQuery query
---   @
+-- @
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> SearchTerm -> SqlQuery ()
+-- searchCompany company term = do
+--   let query = prefixAndQuery term
+--       norm = val []
+--   where_ $ (company ^. CompanySearchIndexDocument) @@. query
+-- @
 --
 prefixAndQuery :: SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
 prefixAndQuery = prefixAndQueryLang "english"
@@ -99,12 +130,17 @@ prefixAndQueryLang language (SearchTerm ts) =
   $ map (to_tsquery (val language) . val . Word Prefix []) $ toList ts
 
 
--- | A valid search term
+-- | A valid search term.
+--   created with 'toSearchTerm'.
 newtype SearchTerm = SearchTerm { unQuery :: NonEmpty Text }
   deriving (Show)
 
--- | constructs a valid search query, removes a bunch of illegal
---   characters and splits the terms for better results
+-- | Constructs a valid search query, removes a bunch of illegal
+--   characters and splits the terms for better results.
+--   Also checks if there is anything in the search term.
+--
+--   using a search term is optional, but it's probably what you want.
+--   all underlying primitives are exposed.
 toSearchTerm :: Text -> Maybe SearchTerm
 toSearchTerm q = SearchTerm <$> nonEmpty qs
   -- We disallow whitespace, \ and ' for the sake of producing a Text

@@ -41,14 +41,18 @@ import Data.Text.Lazy.Builder (Builder, toLazyText, fromText)
 import Database.Persist
 import Database.Persist.Postgresql
 
+-- | ranking functions take an integer normalization option that specifies
+--   whether and how a document's length should impact its rank.
+--  The integer option controls several behaviors, so it is a bit mask: you can specify one or more behaviors using | (for example, 2|4).
+--  https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-RANKING
 data NormalizationOption
-  = NormNone
-  | Norm1LogLength
-  | NormLength
-  | NormMeanHarmDist
-  | NormUniqueWords
-  | Norm1LogUniqueWords
-  | Norm1Self
+  = NormNone -- ^ 0 (the default) ignores the document length
+  | Norm1LogLength -- ^ 1 divides the rank by 1 + the logarithm of the document length
+  | NormLength -- ^ 2 divides the rank by the document length
+  | NormMeanHarmDist -- ^ 4 divides the rank by the mean harmonic distance between extents (this is implemented only by ts_rank_cd)
+  | NormUniqueWords -- ^ 8 divides the rank by the number of unique words in document
+  | Norm1LogUniqueWords -- ^ 16 divides the rank by 1 + the logarithm of the number of unique words in document
+  | Norm1Self -- ^ 32 divides the rank by itself + 1
   deriving (Eq, Show, Enum, Bounded)
 
 normToInt :: NormalizationOption -> Int64
