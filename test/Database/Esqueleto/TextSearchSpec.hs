@@ -96,22 +96,22 @@ spec :: Spec
 spec = do
   describe "TsVector" $ do
     it "can be persisted and retrieved" $ run $ do
-      let article = Article "some title" "some content" def
+      let article = Article "some title" "some content" defaultTsVector
       arId <- insert article
       update  $ \a -> do
         set a [ArticleTextsearch =. to_etsvector (a^.ArticleContent)]
       ret <- fromJust <$> get arId
-      liftIO $ articleTextsearch ret /= def `shouldBe` True
+      liftIO $ articleTextsearch ret /= defaultTsVector `shouldBe` True
 
     it "can be persisted and retrieved with weight" $ run $ do
-      let article = Article "some title" "some content" def
+      let article = Article "some title" "some content" defaultTsVector
       arId <- insert article
       update  $ \a -> do
         set a [  ArticleTextsearch
               =. setweight (to_etsvector (a^.ArticleContent)) (val Highest)
               ]
       ret <- fromJust <$> get arId
-      liftIO $ articleTextsearch ret /= def `shouldBe` True
+      liftIO $ articleTextsearch ret /= defaultTsVector `shouldBe` True
 
   describe "Weight" $ do
     it "can be persisted and retrieved" $ run $ do
@@ -256,7 +256,7 @@ spec = do
 
   describe "@@" $ do
     it "works as expected" $ run $ do
-      let article = Article "some title" "some content" def
+      let article = Article "some title" "some content" defaultTsVector
       arId <- insert article
       update  $ \a -> do
         set a [ArticleTextsearch =. to_etsvector (a^.ArticleContent)]
@@ -279,7 +279,7 @@ spec = do
           content = "content" :: Text
           query   = to_tsquery (val "english") (val "content")
           norm    = val []
-      ret <- select $ return $ ts_rank_cd (val def) vector query norm
+      ret <- select $ return $ ts_rank_cd (val defaultWeights) vector query norm
       liftIO $ map unValue ret `shouldBe` [0.1]
 
   describe "ts_rank" $ do
@@ -288,7 +288,7 @@ spec = do
           content = "content" :: Text
           query   = to_tsquery (val "english") (val "content")
           norm    = val []
-      ret <- select $ return $ ts_rank (val def) vector query norm
+      ret <- select $ return $ ts_rank (val defaultWeights) vector query norm
       liftIO $ unValue (head ret) `shouldBe` 6.079271e-2
 
   describe "NormalizationOption" $ do
