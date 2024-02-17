@@ -6,6 +6,20 @@ you can turn postgres into a database that is similar
 in performance for search as elastic search, without having 
 to deal with elastic search.
 
+## Hacking
+install [nix](https://nixos.org/download) (the package manager).
+Enter the nix shell.
+```
+nix develop
+cabal build
+```
+
+running the tests with nix:
+```
+nix check
+```
+
+
 ## Tutorial
 
 1. decide which fields you want to search for,
