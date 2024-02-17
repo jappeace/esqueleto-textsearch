@@ -1,6 +1,9 @@
 # Change log for esqueleto text search 
 
 
+## Version 1.1.5
++ enable tests in CI
+
 ## Version 1.1.4
 + link to new homepage
 + add better documentation. rexport important stuff in the main module explicetly
