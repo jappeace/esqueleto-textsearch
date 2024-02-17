@@ -3,6 +3,7 @@
 
 ## Version 1.1.4
 + link to new homepage
++ add better documentation. rexport important stuff in the main module explicetly
 
 ## Version 1.1.3
 + update maintainer field to me.
