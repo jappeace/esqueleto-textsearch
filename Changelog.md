@@ -1,5 +1,8 @@
 # Change log for esqueleto text search 
 
+## Version 1.2.0
++ Add prefix or query.
++ expose binops on tsquery
 
 ## Version 1.1.5
 + enable tests in CI

@@ -6,6 +6,7 @@
 module Database.Esqueleto.TextSearch (
    (@@.)
   , prefixAndQuery
+  , prefixOrQuery
   , toSearchTerm
   , SearchTerm
   , ts_rank

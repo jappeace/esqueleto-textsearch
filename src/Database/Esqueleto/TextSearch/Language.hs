@@ -7,6 +7,9 @@
 module Database.Esqueleto.TextSearch.Language
   ( (@@.)
   , prefixAndQuery
+  , prefixOrQuery
+  , prefixAndQueryLang
+  , prefixOrQueryLang
   , toSearchTerm
   , toSearchTermWeighted
   , SearchTerm
@@ -16,6 +19,9 @@ module Database.Esqueleto.TextSearch.Language
   , ts_rank
   , ts_rank_cd
   , setweight
+  -- * ts binary
+  , tsquery_or
+  , tsquery_and
   ) where
 
 import Data.String (IsString)
@@ -113,6 +119,14 @@ tsquery_and :: SqlExpr (Value (TsQuery Lexemes))
       -> SqlExpr (Value (TsQuery Lexemes))
 tsquery_and = unsafeSqlBinOp "&&"
 
+-- | (||) for tsquery. This function would be called (&&.) but
+-- Esqueleto's (&&.) confines that fn to sql boolean expressions.
+-- x::tsquery && y::tsquery == to_tsquery('x & y')
+tsquery_or :: SqlExpr (Value (TsQuery Lexemes))
+      -> SqlExpr (Value (TsQuery Lexemes))
+      -> SqlExpr (Value (TsQuery Lexemes))
+tsquery_or = unsafeSqlBinOp "||"
+
 -- | format the query into lexemes
 --   the result can be used in '@@.' for example:
 --
@@ -124,13 +138,27 @@ tsquery_and = unsafeSqlBinOp "&&"
 --   where_ $ (company ^. CompanySearchIndexDocument) @@. query
 -- @
 --
+--  this uses && to combine queries
 prefixAndQuery :: SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
 prefixAndQuery = prefixAndQueryLang "english"
 
 -- | specify a language to be used with the query.
 prefixAndQueryLang :: RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
-prefixAndQueryLang language (SearchTerm ts) =
-  foldr1 tsquery_and
+prefixAndQueryLang = prefixAndQueryLangWith tsquery_and
+
+prefixOrQuery :: SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixOrQuery = prefixOrQueryLang "english"
+
+-- | same as 'prefixAndQueryLang' but uses || to combine quereis
+prefixOrQueryLang :: RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixOrQueryLang = prefixAndQueryLangWith tsquery_or
+
+-- | allows specifying which binary operation is used for combining queries.
+prefixAndQueryLangWith :: (SqlExpr (Value (TsQuery Lexemes))
+      -> SqlExpr (Value (TsQuery Lexemes))
+      -> SqlExpr (Value (TsQuery Lexemes))) -> RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQueryLangWith binOp language (SearchTerm ts) =
+  foldr1 binOp
   $ map (to_tsquery (val language) . val) $ toList ts
 
 
