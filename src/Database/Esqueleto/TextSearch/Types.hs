@@ -126,6 +126,7 @@ instance PersistFieldSql Weights where
   sqlType = const (SqlOther "float4[4]")
 
 data QueryType = Words | Lexemes
+  deriving Show
 type Lexemes = 'Lexemes
 type Words = 'Words
 

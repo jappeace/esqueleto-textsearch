@@ -3,6 +3,7 @@
 
 ## Version 1.1.5
 + enable tests in CI
++ allow setting of weights in tsquery
 
 ## Version 1.1.4
 + link to new homepage

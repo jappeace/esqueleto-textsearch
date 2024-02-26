@@ -1,11 +1,14 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralisedNewtypeDeriving #-}
 
 module Database.Esqueleto.TextSearch.Language
   ( (@@.)
   , prefixAndQuery
   , toSearchTerm
+  , toSearchTermWeighted
   , SearchTerm
   , to_tsvector
   , to_tsquery
@@ -17,10 +20,11 @@ module Database.Esqueleto.TextSearch.Language
 
 import Data.String (IsString)
 import Data.Text (Text)
-import Database.Esqueleto (SqlExpr, Value, val)
 #if MIN_VERSION_esqueleto(3,5,0)
 import Database.Esqueleto.Internal.Internal (unsafeSqlBinOp, unsafeSqlFunction)
+import Database.Esqueleto.Experimental (SqlExpr, Value, val)
 #else
+import Database.Esqueleto (SqlExpr, Value, val)
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlFunction)
 #endif
 import Database.Esqueleto.TextSearch.Types
@@ -127,13 +131,14 @@ prefixAndQuery = prefixAndQueryLang "english"
 prefixAndQueryLang :: RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
 prefixAndQueryLang language (SearchTerm ts) =
   foldr1 tsquery_and
-  $ map (to_tsquery (val language) . val . Word Prefix []) $ toList ts
+  $ map (to_tsquery (val language) . val) $ toList ts
 
 
 -- | A valid search term.
 --   created with 'toSearchTerm'.
-newtype SearchTerm = SearchTerm { unQuery :: NonEmpty Text }
-  deriving (Show)
+newtype SearchTerm = SearchTerm { unQuery :: NonEmpty (TsQuery Words) }
+  deriving stock Show
+  deriving newtype Semigroup
 
 -- | Constructs a valid search query, removes a bunch of illegal
 --   characters and splits the terms for better results.
@@ -142,7 +147,17 @@ newtype SearchTerm = SearchTerm { unQuery :: NonEmpty Text }
 --   using a search term is optional, but it's probably what you want.
 --   all underlying primitives are exposed.
 toSearchTerm :: Text -> Maybe SearchTerm
-toSearchTerm q = SearchTerm <$> nonEmpty qs
+toSearchTerm = toSearchTermWeighted []
+
+-- | create a search term with some weight, this allows tweaking of priority of certain terms.
+--   for example if you want to do some post processing on user input.
+--   where they insist on typing dashes,
+--   you split on the dash and concatinate the search term with lower
+--   priority splitted strings on the dash.
+--   so the full string is high priority, substrings lower.
+--   use the semigroup instance on search term to combine these.
+toSearchTermWeighted :: [Weight] -> Text -> Maybe SearchTerm
+toSearchTermWeighted weights q = SearchTerm .  fmap (Word Prefix weights) <$> nonEmpty qs
   -- We disallow whitespace, \ and ' for the sake of producing a Text
   -- that can fit postgresql's requirements for to_tsquery's text
   -- argument. Note that this is not done nor needed for security reasons
