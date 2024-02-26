@@ -177,13 +177,9 @@ newtype SearchTerm = SearchTerm { unQuery :: NonEmpty (TsQuery Words) }
 toSearchTerm :: Text -> Maybe SearchTerm
 toSearchTerm = toSearchTermWeighted []
 
--- | create a search term with some weight, this allows tweaking of priority of certain terms.
---   for example if you want to do some post processing on user input.
---   where they insist on typing dashes,
---   you split on the dash and concatinate the search term with lower
---   priority splitted strings on the dash.
---   so the full string is high priority, substrings lower.
---   use the semigroup instance on search term to combine these.
+-- | create a search term with some weight, this allows for restricting on specific weighs.
+--   see: https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES
+--   use the semigroup instance on search term to combine searchterms.
 toSearchTermWeighted :: [Weight] -> Text -> Maybe SearchTerm
 toSearchTermWeighted weights q = SearchTerm .  fmap (Word Prefix weights) <$> nonEmpty qs
   -- We disallow whitespace, \ and ' for the sake of producing a Text
