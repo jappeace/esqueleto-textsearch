@@ -85,7 +85,7 @@ to_tsquery a b = unsafeSqlFunction "to_tsquery" (a, b)
 --   @
 -- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> Text -> SqlQuery ()
 -- searchCompany company term = do
---   let query = to_tsquery_en $ val $ andWords $ prefixAndQuery term
+--   let query = 'to_tsquery_en' (val "english") $ val $ 'andWords' $ 'toSearchTerm' term
 --   where_ $ (company ^. CompanySearchIndexDocument) @@. query
 --   @
 --

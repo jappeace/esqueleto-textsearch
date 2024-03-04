@@ -1,5 +1,9 @@
 # Change log for esqueleto text search 
 
+## Version 1.3.2
++ fix doc issue to_tsquery_en for real this time
+
+
 ## Version 1.3.1
 + fix doc issue to_tsquery_en
 
