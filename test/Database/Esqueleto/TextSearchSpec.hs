@@ -20,7 +20,7 @@
 module Database.Esqueleto.TextSearchSpec (main, spec) where
 
 import Control.Monad (forM_)
-import Data.Maybe (fromJust)
+import Data.Maybe
 import Data.Text (Text, pack)
 
 import Control.Monad.IO.Class (MonadIO(liftIO))
@@ -51,7 +51,7 @@ import Database.Persist.Postgresql
        )
 import Database.Persist.TH
        (mkMigrate, mkPersist, persistUpperCase, share, sqlSettings)
-import Test.Hspec (Spec, describe, hspec, it, shouldBe)
+import Test.Hspec
 import Test.QuickCheck
        (Arbitrary(..), choose, elements, listOf, listOf1, oneof, property)
 
@@ -272,6 +272,43 @@ spec = do
         where_ $ (a^. ArticleTextsearch) @@. query2
         return a
       liftIO $ length result2 `shouldBe` 0
+
+    it "works with andwords" $ run $ do
+      let article = Article "some title" "some content" defaultTsVector
+      arId <- insert article
+      update  $ \a -> do
+        set a [ArticleTextsearch =. to_etsvector (a^.ArticleContent)]
+      let query = to_tsquery (val "english") (val $ andWords $ fromMaybe (error "empty") $ toSearchTerm "some content")
+      result <- select $ from $ \a -> do
+        where_ $ (a^. ArticleTextsearch) @@. query
+        return a
+      liftIO $ do
+        length result `shouldBe` 1
+        map entityKey result `shouldBe` [arId]
+      let query2 = to_tsquery (val "english") (val $ andWords $ fromMaybe (error "empty") $ toSearchTerm "foo content")
+      result2 <- select $ from $ \a -> do
+        where_ $ (a^. ArticleTextsearch) @@. query2
+        return a
+      liftIO $ length result2 `shouldBe` 0
+
+    it "works with orwords" $ run $ do
+      let article = Article "some title" "some content" defaultTsVector
+      arId <- insert article
+      update  $ \a -> do
+        set a [ArticleTextsearch =. to_etsvector (a^.ArticleContent)]
+      let query = to_tsquery (val "english") (val $ orWords $ fromMaybe (error "empty") $ toSearchTerm "some content")
+      result <- select $ from $ \a -> do
+        where_ $ (a^. ArticleTextsearch) @@. query
+        return a
+      liftIO $ do
+        length result `shouldBe` 1
+        map entityKey result `shouldBe` [arId]
+      let query2 = to_tsquery (val "english") (val $ orWords $ fromMaybe (error "empty") $ toSearchTerm "foo content")
+      result2 <- select $ from $ \a -> do
+        where_ $ (a^. ArticleTextsearch) @@. query2
+        return a
+      liftIO $ length result2 `shouldBe` 1
+
 
   describe "ts_rank_cd" $ do
     it "works as expected" $ run $ do

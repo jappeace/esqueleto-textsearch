@@ -4,15 +4,12 @@
 --
 --   see the [readme](https://hackage.haskell.org/package/esqueleto-textsearch#tutorial) for a full tutorial.
 module Database.Esqueleto.TextSearch (
-   (@@.)
-  , prefixAndQuery
-  , prefixOrQuery
-  , toSearchTerm
-  , SearchTerm
+    toSearchTerm
+  , to_tsquery_en
+  , andWords
+  , orWords
+  , (@@.)
   , ts_rank
-  , defaultWeights
-  , Weights (..)
-  , RegConfig
   , NormalizationOption(..)
   , module Database.Esqueleto.TextSearch.Language
   , module Database.Esqueleto.TextSearch.Types
