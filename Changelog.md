@@ -1,5 +1,8 @@
 # Change log for esqueleto text search 
 
+## Version 1.3.1
++ fix doc issue to_tsquery_en
+
 ## Version 1.3.0
 + Update misleading tsquery and and or
 + expose underlying lists in search terms

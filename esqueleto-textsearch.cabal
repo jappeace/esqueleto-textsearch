@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               esqueleto-textsearch
-version:            1.3.0
+version:            1.3.1
 synopsis:           PostgreSQL full text search for Esqueleto
 description:        PostgreSQL text search functions for Esqueleto.
 homepage:           https://github.com/jappeace/esqueleto-textsearch

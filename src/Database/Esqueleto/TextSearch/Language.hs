@@ -70,7 +70,7 @@ to_tsvector a b = unsafeSqlFunction "to_tsvector" (a, b)
 --   @
 -- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> Text -> SqlQuery ()
 -- searchCompany company term = do
---   let query = to_tsquery (val "english") $ val $ andWords $ prefixAndQuery term
+--   let query = 'to_tsquery' (val "english") $ val $ 'andWords' $ 'toSearchTerm' term
 --   where_ $ (company ^. CompanySearchIndexDocument) @@. query
 --   @
 --

@@ -6,9 +6,9 @@
 module Database.Esqueleto.TextSearch (
     toSearchTerm
   , to_tsquery_en
+  , (@@.)
   , andWords
   , orWords
-  , (@@.)
   , ts_rank
   , NormalizationOption(..)
   , module Database.Esqueleto.TextSearch.Language
