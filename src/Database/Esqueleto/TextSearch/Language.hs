@@ -12,9 +12,11 @@ module Database.Esqueleto.TextSearch.Language
   , prefixOrQueryLang
   , toSearchTerm
   , toSearchTermWeighted
-  , SearchTerm
+  , andWords
+  , orWords
   , to_tsvector
   , to_tsquery
+  , to_tsquery_en
   , plainto_tsquery
   , ts_rank
   , ts_rank_cd
@@ -42,7 +44,7 @@ import Data.List.NonEmpty(nonEmpty, NonEmpty, toList)
 --   for example:
 --
 -- @
--- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> SearchTerm -> SqlQuery ()
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> NonEmpty (TsQuery Words) -> SqlQuery ()
 -- searchCompany company term = do
 --   let query = prefixAndQuery term
 --       norm = val []
@@ -62,11 +64,33 @@ to_tsvector
   -> SqlExpr (Value TsVector)
 to_tsvector a b = unsafeSqlFunction "to_tsvector" (a, b)
 
+-- | constructs a lexeme query out of a word algebra
+--   english is the internal model used by postgres.
+--
+--   @
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> Text -> SqlQuery ()
+-- searchCompany company term = do
+--   let query = to_tsquery (val "english") $ val $ andWords $ prefixAndQuery term
+--   where_ $ (company ^. CompanySearchIndexDocument) @@. query
+--   @
+--
 to_tsquery
   :: SqlExpr (Value RegConfig)
   -> SqlExpr (Value (TsQuery Words))
   -> SqlExpr (Value (TsQuery Lexemes) )
 to_tsquery a b = unsafeSqlFunction "to_tsquery" (a, b)
+
+-- | 'to_tsquery' defaulted to english
+--
+--   @
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> Text -> SqlQuery ()
+-- searchCompany company term = do
+--   let query = to_tsquery_en $ val $ andWords $ prefixAndQuery term
+--   where_ $ (company ^. CompanySearchIndexDocument) @@. query
+--   @
+--
+to_tsquery_en :: SqlExpr (Value (TsQuery Words)) -> SqlExpr (Value (TsQuery Lexemes))
+to_tsquery_en = to_tsquery (val "english")
 
 plainto_tsquery
   :: SqlExpr (Value RegConfig)
@@ -79,7 +103,7 @@ plainto_tsquery a b = unsafeSqlFunction "plainto_tsquery" (a, b)
 --   for example:
 --
 -- @
--- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> SearchTerm -> SqlQuery ()
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> NonEmpty (TsQuery Words) -> SqlQuery ()
 -- searchCompany company term = do
 --   let query = prefixAndQuery term
 --       norm = val []
@@ -113,25 +137,34 @@ setweight a b = unsafeSqlFunction "setweight" (a, b)
 
 -- | (&&) for tsquery. This function would be called (&&.) but
 -- Esqueleto's (&&.) confines that fn to sql boolean expressions.
+--
+-- @
 -- x::tsquery && y::tsquery == to_tsquery('x & y')
+-- @
+--
 tsquery_and :: SqlExpr (Value (TsQuery Lexemes))
       -> SqlExpr (Value (TsQuery Lexemes))
       -> SqlExpr (Value (TsQuery Lexemes))
 tsquery_and = unsafeSqlBinOp "&&"
 
 -- | (||) for tsquery. This function would be called (&&.) but
--- Esqueleto's (&&.) confines that fn to sql boolean expressions.
--- x::tsquery && y::tsquery == to_tsquery('x & y')
+-- Esqueleto's (||.) confines that fn to sql boolean expressions.
+--
+-- @
+-- x::tsquery || y::tsquery == to_tsquery('x | y')
+-- @
+--
 tsquery_or :: SqlExpr (Value (TsQuery Lexemes))
       -> SqlExpr (Value (TsQuery Lexemes))
       -> SqlExpr (Value (TsQuery Lexemes))
 tsquery_or = unsafeSqlBinOp "||"
 
+{-# DEPRECATED prefixAndQuery, prefixAndQueryLang, prefixOrQuery, prefixOrQueryLang, prefixAndQueryLangWith "these functions are simple wrappers for 'to_tsquery', use that directly instead" #-}
 -- | format the query into lexemes
 --   the result can be used in '@@.' for example:
 --
 -- @
--- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> SearchTerm -> SqlQuery ()
+-- searchCompany :: SqlExpr (Entity CompanySearchIndex) -> (NonEmpty (TsQuery Words)) -> SqlQuery ()
 -- searchCompany company term = do
 --   let query = prefixAndQuery term
 --       norm = val []
@@ -139,34 +172,35 @@ tsquery_or = unsafeSqlBinOp "||"
 -- @
 --
 --  this uses && to combine queries
-prefixAndQuery :: SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQuery :: (NonEmpty (TsQuery Words)) -> SqlExpr (Value (TsQuery Lexemes))
 prefixAndQuery = prefixAndQueryLang "english"
 
 -- | specify a language to be used with the query.
-prefixAndQueryLang :: RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQueryLang :: RegConfig -> (NonEmpty (TsQuery Words)) -> SqlExpr (Value (TsQuery Lexemes))
 prefixAndQueryLang = prefixAndQueryLangWith tsquery_and
 
-prefixOrQuery :: SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixOrQuery :: (NonEmpty (TsQuery Words)) -> SqlExpr (Value (TsQuery Lexemes))
 prefixOrQuery = prefixOrQueryLang "english"
 
 -- | same as 'prefixAndQueryLang' but uses || to combine quereis
-prefixOrQueryLang :: RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
+prefixOrQueryLang :: RegConfig -> (NonEmpty (TsQuery Words)) -> SqlExpr (Value (TsQuery Lexemes))
 prefixOrQueryLang = prefixAndQueryLangWith tsquery_or
 
 -- | allows specifying which binary operation is used for combining queries.
 prefixAndQueryLangWith :: (SqlExpr (Value (TsQuery Lexemes))
       -> SqlExpr (Value (TsQuery Lexemes))
-      -> SqlExpr (Value (TsQuery Lexemes))) -> RegConfig -> SearchTerm -> SqlExpr (Value (TsQuery Lexemes))
-prefixAndQueryLangWith binOp language (SearchTerm ts) =
+      -> SqlExpr (Value (TsQuery Lexemes))) -> RegConfig -> (NonEmpty (TsQuery Words)) -> SqlExpr (Value (TsQuery Lexemes))
+prefixAndQueryLangWith binOp language ts =
   foldr1 binOp
   $ map (to_tsquery (val language) . val) $ toList ts
 
+-- | same as 'prefixAndQuery' without wrapping 'to_tsquery'.
+andWords :: NonEmpty (TsQuery Words) -> TsQuery Words
+andWords = foldr1 (:&)
 
--- | A valid search term.
---   created with 'toSearchTerm'.
-newtype SearchTerm = SearchTerm { unQuery :: NonEmpty (TsQuery Words) }
-  deriving stock Show
-  deriving newtype Semigroup
+-- | same as 'prefixOrQuery' without wrapping 'to_tsquery'.
+orWords :: NonEmpty (TsQuery Words) -> TsQuery Words
+orWords = foldr1 (:|)
 
 -- | Constructs a valid search query, removes a bunch of illegal
 --   characters and splits the terms for better results.
@@ -174,14 +208,14 @@ newtype SearchTerm = SearchTerm { unQuery :: NonEmpty (TsQuery Words) }
 --
 --   using a search term is optional, but it's probably what you want.
 --   all underlying primitives are exposed.
-toSearchTerm :: Text -> Maybe SearchTerm
+toSearchTerm :: Text -> Maybe (NonEmpty (TsQuery Words))
 toSearchTerm = toSearchTermWeighted []
 
 -- | create a search term with some weight, this allows for restricting on specific weighs.
 --   see: https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES
 --   use the semigroup instance on search term to combine searchterms.
-toSearchTermWeighted :: [Weight] -> Text -> Maybe SearchTerm
-toSearchTermWeighted weights q = SearchTerm .  fmap (Word Prefix weights) <$> nonEmpty qs
+toSearchTermWeighted :: [Weight] -> Text -> Maybe (NonEmpty (TsQuery Words))
+toSearchTermWeighted weights q = fmap (Word Prefix weights) <$> nonEmpty qs
   -- We disallow whitespace, \ and ' for the sake of producing a Text
   -- that can fit postgresql's requirements for to_tsquery's text
   -- argument. Note that this is not done nor needed for security reasons

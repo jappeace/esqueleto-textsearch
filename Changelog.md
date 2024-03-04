@@ -1,5 +1,16 @@
 # Change log for esqueleto text search 
 
+## Version 1.3.0
++ Update misleading tsquery and and or
++ expose underlying lists in search terms
+  + you may get some breaking change since SearchTerm no longer exists.
+    It should be replaced with `NonEmpty (TsQuery Words)`.
+    I thought it better to just cleanup since the library is still rather young.
++ remove search term datatype in favor of underlying.
+  I realized the newtype would be heavy to maintain for little benefit
++ Add alternative api which is simpler using the word algebra,
+  added some examples in the docs which use these.
+
 ## Version 1.2.1
 + Update misleading docs
 
